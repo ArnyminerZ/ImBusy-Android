@@ -12,6 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ImBusy"
         android:localeConfig="@xml/locales_config"
+        android:name=".App"
         tools:ignore="UnusedAttribute"
         tools:targetApi="31">
         <activity
