@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -70,6 +71,14 @@ dependencies {
 
     // Jetpack Compose - Accompanist utilities
     implementation "com.google.accompanist:accompanist-pager:0.24.13-rc"
+
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:30.1.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-auth-ktx'
+
+    // Google Mobile Services
+    implementation 'com.google.android.gms:play-services-auth:20.2.0'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
