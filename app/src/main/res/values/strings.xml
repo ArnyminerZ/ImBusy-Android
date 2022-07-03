@@ -1,3 +1,26 @@
 <resources>
     <string name="app_name">I\'m Busy</string>
+
+    <string name="action_next">Next</string>
+    <string name="action_done">Done</string>
+    <string name="action_complete_step">Complete Step</string>
+
+    <string name="auth_google">Sign In with Google</string>
+
+    <string name="fab_desc_intro_next">Next Intro Slide</string>
+    <string name="fab_desc_intro_end">Close the Intro Page</string>
+    <string name="fab_desc_intro_complete_step">Complete the step above to continue</string>
+
+    <string name="dropdown_choose">Choose an option</string>
+
+    <string name="intro_1_title">Welcome to I\'m Busy!</string>
+    <string name="intro_1_subtitle">The app that will help you and your friends get organized for once and forever.</string>
+    <string name="intro_2_title">How shall the app be displayed?</string>
+    <string name="intro_2_subtitle">Please, choose your preferred language for display in the app, and talking to you.</string>
+    <string name="intro_2_dropdown_description">Choose a language</string>
+    <string name="intro_3_title">Authentication is needed</string>
+    <string name="intro_3_subtitle">The app requires you to be authenticated to work. Please, log in using one of the methods available.</string>
+
+    <string name="toast_error_login">Login could not be performed</string>
+    <string name="toast_error_intro_step">Please, complete the step above first.</string>
 </resources>
