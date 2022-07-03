@@ -72,6 +72,9 @@ dependencies {
     // Jetpack Compose - Accompanist utilities
     implementation "com.google.accompanist:accompanist-pager:0.24.13-rc"
 
+    // Jetpack Compose - Font Awesome Icons
+    implementation 'com.github.Gurupreet:FontAwesomeCompose:1.0.0'
+
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:30.1.0')
     implementation 'com.google.firebase:firebase-analytics'
