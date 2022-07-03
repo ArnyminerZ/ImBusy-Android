@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arnyminerz.imbusy.android.R
+import com.arnyminerz.imbusy.android.ui.intro.data.InteractionEvent
 import com.arnyminerz.imbusy.android.ui.intro.data.OptionsData
 
 @Composable
@@ -38,6 +39,8 @@ fun IntroPage(
     emoji: String,
     optionsData: OptionsData?,
     buttons: List<@Composable () -> Unit>,
+    onInteraction: InteractionEvent<Boolean>?,
+    onNextPageRequested: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -133,6 +136,8 @@ fun IntroPage(
             // Buttons
             for (buttonData in buttons)
                 buttonData()
+
+            onInteraction?.addReceiver { if (it) onNextPageRequested() }
         }
     }
 }

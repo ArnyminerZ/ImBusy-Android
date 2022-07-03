@@ -14,6 +14,7 @@ import androidx.core.os.LocaleListCompat
 import com.arnyminerz.imbusy.android.R
 import com.arnyminerz.imbusy.android.ui.components.SignInButton
 import com.arnyminerz.imbusy.android.ui.intro.IntroPager
+import com.arnyminerz.imbusy.android.ui.intro.data.InteractionEvent
 import com.arnyminerz.imbusy.android.ui.intro.data.IntroPageData
 import com.arnyminerz.imbusy.android.ui.intro.data.OptionsData
 import com.arnyminerz.imbusy.android.ui.theme.ImBusyTheme
@@ -28,6 +29,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.guru.fontawesomecomposelib.FaIcons
 import timber.log.Timber
 
 class IntroActivity : AppCompatActivity() {
@@ -41,10 +43,13 @@ class IntroActivity : AppCompatActivity() {
     private lateinit var signInRequest: BeginSignInRequest
 
     private var currentUser = mutableStateOf<FirebaseUser?>(null)
-    private var isLoggedIn = mutableStateOf<Boolean>(false)
+    private var isLoggedIn = mutableStateOf(false)
+
+    private val loginEvent = InteractionEvent<Boolean>()
 
     private fun updateIsLoggedIn() {
         isLoggedIn.value = currentUser.value != null
+        loginEvent(isLoggedIn.value)
     }
 
     private val googleSignInRegistration = registerForActivityResult(
@@ -143,10 +148,11 @@ class IntroActivity : AppCompatActivity() {
                             stringResource(R.string.intro_3_title),
                             stringResource(R.string.intro_3_subtitle),
                             "\uD83D\uDD12", // 🔒
-                            requires = isLoggedIn,
+                            onInteraction = loginEvent,
                             buttons = listOf {
                                 SignInButton(
                                     text = stringResource(R.string.auth_google),
+                                    icon = FaIcons.Google,
                                 ) {
                                     oneTapClient
                                         .beginSignIn(signInRequest)
@@ -170,6 +176,11 @@ class IntroActivity : AppCompatActivity() {
                                 }
                             }
                         ),
+                        IntroPageData(
+                            "Final page",
+                            "This is a testing page",
+                            "ℹ️",
+                        )
                     )
                 ) {
                     setResult(RESULT_FINISH)
