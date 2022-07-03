@@ -5,11 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Surface
@@ -20,26 +20,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
+import com.guru.fontawesomecomposelib.FaIcon
+import com.guru.fontawesomecomposelib.FaIconType
 
 @Composable
 fun SignInButton(
     text: String,
     loadingText: String = "Signing in...",
-    icon: Painter? = null,
+    icon: FaIconType? = null,
     isLoading: Boolean = false,
     shape: Shape = Shapes.Full,
     borderColor: Color = LightGray,
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
+    foregroundColor: Color = MaterialTheme.colorScheme.onSurface,
     progressIndicatorColor: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.clickable(
-            enabled = !isLoading,
-            onClick = onClick
-        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                enabled = !isLoading,
+                onClick = onClick
+            ),
         shape = shape,
         border = BorderStroke(width = 1.dp, color = borderColor),
         color = backgroundColor
@@ -56,15 +60,17 @@ fun SignInButton(
             horizontalArrangement = Arrangement.Center,
         ) {
             if (icon != null) {
-                Icon(
-                    painter = icon,
-                    contentDescription = "SignInButton",
-                    tint = Color.Unspecified
+                FaIcon(
+                    faIcon = icon,
+                    tint = foregroundColor,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            Text(text = if (isLoading) loadingText else text)
+            Text(
+                text = if (isLoading) loadingText else text,
+                color = foregroundColor,
+            )
             if (isLoading) {
                 Spacer(modifier = Modifier.width(16.dp))
                 CircularProgressIndicator(
