@@ -31,6 +31,10 @@
             android:name=".activity.IntroActivity"
             android:exported="true" />
 
+        <activity
+            android:name=".activity.dialog.EventSelectorActivity"
+            android:exported="true" />
+
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
