@@ -80,9 +80,9 @@ dependencies {
     implementation 'io.coil-kt:coil-compose:2.1.0'
 
     // Jetpack Compose - Calendar
-    def compose_calendar_version = '0.5.1'
-    implementation "io.github.boguszpawlowski.composecalendar:composecalendar:$compose_calendar_version"
-    implementation "io.github.boguszpawlowski.composecalendar:kotlinx-datetime:$compose_calendar_version"
+    // def compose_calendar_version = '0.5.1'
+    // implementation "io.github.boguszpawlowski.composecalendar:composecalendar:$compose_calendar_version"
+    // implementation "io.github.boguszpawlowski.composecalendar:kotlinx-datetime:$compose_calendar_version"
 
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:30.1.0')
