@@ -24,6 +24,8 @@ import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -38,6 +40,7 @@ class IntroActivity : AppCompatActivity() {
     }
 
     private lateinit var auth: FirebaseAuth
+    private lateinit var analytics: FirebaseAnalytics
 
     private lateinit var oneTapClient: SignInClient
     private lateinit var signInRequest: BeginSignInRequest
@@ -68,7 +71,19 @@ class IntroActivity : AppCompatActivity() {
                         .addOnSuccessListener { signInResult ->
                             // Sign in success, update UI with the signed-in user's information
                             Timber.i("signInWithCredential:success")
+                            analytics.logEvent(
+                                FirebaseAnalytics.Event.LOGIN,
+                                Bundle()
+                                    .apply {
+                                        putString(
+                                            FirebaseAnalytics.Param.METHOD,
+                                            "google"
+                                        )
+                                    }
+                            )
+
                             val user = signInResult.user
+                            analytics.setUserId(user?.uid)
                             currentUser.value = user
                             updateIsLoggedIn()
                         }
@@ -98,6 +113,7 @@ class IntroActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         auth = Firebase.auth
+        analytics = Firebase.analytics
 
         oneTapClient = Identity.getSignInClient(this)
         signInRequest = BeginSignInRequest.builder()
