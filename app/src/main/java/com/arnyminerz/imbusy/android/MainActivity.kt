@@ -136,6 +136,9 @@ class MainActivity : ComponentActivity() {
 
         auth = Firebase.auth
 
+        if (auth.currentUser == null)
+            return
+
         setContent {
             ImBusyTheme {
                 val user by firebaseUser
@@ -162,6 +165,9 @@ class MainActivity : ComponentActivity() {
                 val calendarState = rememberSelectableCalendarState()
                 calendarState.selectionState.selectionMode = SelectionMode.Period
 
+                val bottomSheetMorningEnabled = remember { mutableStateOf(true) }
+                val bottomSheetAfternoonEnabled = remember { mutableStateOf(true) }
+
                 val scope = rememberCoroutineScope()
                 val bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
                 val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
@@ -172,9 +178,12 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     snapshotFlow { bottomSheetState.currentValue }
                         .collect {
-                            if (it == BottomSheetValue.Collapsed)
+                            if (it == BottomSheetValue.Collapsed) {
+                                // When collapsing, clear all selection
                                 calendarState.selectionState.selection = emptyList()
-                            else {
+                                bottomSheetMorningEnabled.value = true
+                                bottomSheetAfternoonEnabled.value = true
+                            } else {
                                 // If the bottom sheet is being shown, but there's no selected
                                 // event, close it, selection is not valid
                                 if (selectedEvent == null)
@@ -195,6 +204,8 @@ class MainActivity : ComponentActivity() {
                             calendarState,
                             bottomSheetState,
                             selectedEvent,
+                            bottomSheetMorningEnabled,
+                            bottomSheetAfternoonEnabled,
                         )
                     },
                     sheetGesturesEnabled = true,
