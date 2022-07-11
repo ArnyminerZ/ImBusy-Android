@@ -12,6 +12,7 @@
     <string name="action_cancel_selection">Cancel Selection</string>
     <string name="action_choose">Choose</string>
     <string name="action_create">Create</string>
+    <string name="action_retry">Try again</string>
 
     <string name="auth_google">Sign In with Google</string>
 
@@ -32,6 +33,8 @@
     <string name="image_desc_event_creator_name">Event Name</string>
     <string name="image_desc_event_start">Event Start Date</string>
     <string name="image_desc_event_end">Event End Date</string>
+    <string name="image_desc_filter_morning">Available during the morning</string>
+    <string name="image_desc_filter_afternoon">Available during the afternoon</string>
 
     <string name="dropdown_choose">Choose an option</string>
 
@@ -56,6 +59,10 @@
     <string name="events_list_empty">There are no events to display</string>
 
     <string name="event_view_no_selection">You have not selected any event</string>
+    <string name="event_toolbar_calendar">Calendar</string>
+    <string name="event_toolbar_summary">Summary</string>
+    <string name="event_toolbar_members">Members</string>
+    <string name="event_toolbar_properties">Properties</string>
 
     <string name="event_creator_label_name">Event Name</string>
     <string name="event_creator_label_start">Start Date</string>
@@ -72,4 +79,10 @@
     <string name="event_type_member">Member</string>
 
     <string name="snackbar_error_event_create_empty">Please, fill all the fields</string>
+
+    <string name="event_date_modal_badge_morning">Morning</string>
+    <string name="event_date_modal_badge_afternoon">Afternoon</string>
+
+    <string name="error_events_load_title">Could not load events</string>
+    <string name="error_events_load_msg">There has been an error while loading events from the server. Error code: %s</string>
 </resources>
