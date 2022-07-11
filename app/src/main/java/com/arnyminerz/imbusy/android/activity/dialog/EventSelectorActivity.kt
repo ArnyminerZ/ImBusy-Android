@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
@@ -52,6 +53,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,6 +62,7 @@ import com.arnyminerz.imbusy.android.R
 import com.arnyminerz.imbusy.android.data.EventData
 import com.arnyminerz.imbusy.android.ui.components.EventCard
 import com.arnyminerz.imbusy.android.ui.theme.ImBusyTheme
+import com.arnyminerz.imbusy.android.ui.viewmodel.EventCreator
 import com.arnyminerz.imbusy.android.utils.assertStates
 import com.arnyminerz.imbusy.android.utils.format
 import com.arnyminerz.imbusy.android.utils.ifElse
@@ -90,9 +93,12 @@ class EventSelectorActivity : AppCompatActivity() {
 
         const val EXTRA_KEY_INVALID = "AttrInvalid"
         const val EXTRA_KEY_EVENT = "EventId"
+        const val EXTRA_KEY_CREATED = "EventCreated"
     }
 
     private val analytics = Firebase.analytics
+
+    private val viewModel by viewModels<EventCreator> { EventCreator.Factory() }
 
     @SuppressLint("UnsafeOptInUsageError")
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalPagerApi::class)
@@ -241,9 +247,20 @@ class EventSelectorActivity : AppCompatActivity() {
                                 onClick = {
                                     if (listOf(createEventName, createEventStart, createEventEnd)
                                             .assertStates()
-                                    ) {
-                                        // TODO: Create event
-                                    } else scope.launch {
+                                    )
+                                        viewModel.createEvent(
+                                            creator = userUid,
+                                            name = createEventName.value,
+                                            startDate = createEventStart.value!!,
+                                            endDate = createEventEnd.value!!,
+                                        ) { eventData ->
+                                            setResultAndClose(
+                                                RESULT_CODE_SELECTION,
+                                                eventId = eventData.id,
+                                                createdEvent = eventData,
+                                            )
+                                        }
+                                    else scope.launch {
                                         snackbarHostState.showSnackbar(
                                             getString(R.string.snackbar_error_event_create_empty)
                                         )
@@ -280,6 +297,7 @@ class EventSelectorActivity : AppCompatActivity() {
         resultCode: Int,
         invalidCode: String? = null,
         eventId: String? = null,
+        createdEvent: EventData? = null,
     ) {
         if (invalidCode == null && eventId == null)
             setResult(resultCode)
@@ -289,6 +307,7 @@ class EventSelectorActivity : AppCompatActivity() {
                 Intent()
                     .putExtra(EXTRA_KEY_INVALID, invalidCode)
                     .putExtra(EXTRA_KEY_EVENT, eventId)
+                    .putExtra(EXTRA_KEY_CREATED, createdEvent)
             )
         finish()
     }
@@ -421,6 +440,7 @@ class EventSelectorActivity : AppCompatActivity() {
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
                 keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next,
                 ),
