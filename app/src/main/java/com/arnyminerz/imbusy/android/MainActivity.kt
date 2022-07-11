@@ -7,41 +7,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomSheetScaffold
 import androidx.compose.material.BottomSheetValue
-import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.EventAvailable
-import androidx.compose.material.icons.rounded.EventBusy
-import androidx.compose.material.icons.rounded.ListAlt
 import androidx.compose.material.rememberBottomSheetScaffoldState
 import androidx.compose.material.rememberBottomSheetState
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -50,15 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
-import coil.compose.AsyncImage
 import com.arnyminerz.imbusy.android.activity.IntroActivity
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.EXTRA_KEY_CREATED
@@ -69,13 +41,16 @@ import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Compa
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_SELECTION
 import com.arnyminerz.imbusy.android.data.EventData
 import com.arnyminerz.imbusy.android.pref.Keys
+import com.arnyminerz.imbusy.android.ui.components.DatesSelectionBottomSheet
+import com.arnyminerz.imbusy.android.ui.components.bar.MainTopBar
 import com.arnyminerz.imbusy.android.ui.components.calendar.DayView
+import com.arnyminerz.imbusy.android.ui.components.card.EventLoadErrorCard
+import com.arnyminerz.imbusy.android.ui.components.card.NoEventSelectedCard
 import com.arnyminerz.imbusy.android.ui.components.dialog.ProfileDialog
 import com.arnyminerz.imbusy.android.ui.theme.ImBusyTheme
 import com.arnyminerz.imbusy.android.ui.viewmodel.EventLoader
 import com.arnyminerz.imbusy.android.utils.dataStore
 import com.arnyminerz.imbusy.android.utils.doAsync
-import com.arnyminerz.imbusy.android.utils.format
 import com.arnyminerz.imbusy.android.utils.getLegacyParcelableExtra
 import com.arnyminerz.imbusy.android.utils.restart
 import com.google.firebase.auth.FirebaseAuth
@@ -180,79 +155,10 @@ class MainActivity : ComponentActivity() {
                 BottomSheetScaffold(
                     sheetBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
                     sheetContent = {
-                        if (selectedEvent == null)
-                            return@BottomSheetScaffold
-
-                        Row {
-                            @Composable
-                            fun NavItem(
-                                icon: ImageVector,
-                                imageDescription: String,
-                                label: String,
-                                canBeDisabled: Boolean = true,
-                                onClick: () -> Unit,
-                            ) {
-                                val enabled =
-                                    !canBeDisabled || calendarState.selectionState.selection.size >= 2
-
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(vertical = 8.dp, horizontal = 4.dp)
-                                        .clickable(enabled, onClick = onClick),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    CompositionLocalProvider(
-                                        LocalContentAlpha provides if (enabled) ContentAlpha.high else ContentAlpha.disabled,
-                                    ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = imageDescription,
-                                            modifier = Modifier.size(32.dp),
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                                .copy(alpha = LocalContentAlpha.current)
-                                        )
-                                        Text(
-                                            label,
-                                            style = MaterialTheme.typography.labelLarge,
-                                            textAlign = TextAlign.Center,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                .copy(alpha = LocalContentAlpha.current)
-                                        )
-                                    }
-                                }
-                            }
-
-                            NavItem(
-                                Icons.Rounded.EventBusy,
-                                stringResource(R.string.image_desc_mark_busy),
-                                stringResource(R.string.action_mark_busy),
-                            ) { }
-                            NavItem(
-                                Icons.Rounded.EventAvailable,
-                                stringResource(R.string.image_desc_mark_available),
-                                stringResource(R.string.action_mark_available),
-                            ) { }
-                            NavItem(
-                                Icons.Rounded.Close,
-                                stringResource(R.string.image_desc_cancel_selection),
-                                stringResource(R.string.action_cancel_selection),
-                                canBeDisabled = false,
-                            ) {
-                                scope.launch {
-                                    calendarState.selectionState.selection = emptyList()
-                                    bottomSheetState.collapse()
-                                }
-                            }
-                        }
-
-                        Text(
-                            stringResource(R.string.event_field_date_start)
-                                .format(selectedEvent?.startDate?.format("yyyy-MM-dd"))
-                        )
-                        Text(
-                            stringResource(R.string.event_field_date_end)
-                                .format(selectedEvent?.endDate?.format("yyyy-MM-dd"))
+                        DatesSelectionBottomSheet(
+                            calendarState,
+                            bottomSheetState,
+                            selectedEvent,
                         )
                     },
                     sheetGesturesEnabled = true,
@@ -262,33 +168,12 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Scaffold(
                         topBar = {
-                            CenterAlignedTopAppBar(
-                                title = {
-                                    Text(text = stringResource(R.string.app_name))
-                                },
-                                navigationIcon = {
-                                    AnimatedVisibility(viewModelError == null && !loading) {
-                                        IconButton(
-                                            onClick = {
-                                                chooseEvent(user, memberEvents + creatorEvents)
-                                            },
-                                        ) {
-                                            Icon(
-                                                Icons.Rounded.ListAlt,
-                                                stringResource(R.string.image_desc_events_list),
-                                            )
-                                        }
-                                    }
-                                },
-                                actions = {
-                                    if (user != null)
-                                        IconButton(onClick = { showingProfileDialog = true }) {
-                                            AsyncImage(
-                                                model = user?.photoUrl,
-                                                contentDescription = stringResource(R.string.fab_desc_profile_image),
-                                            )
-                                        }
-                                }
+                            MainTopBar(
+                                viewModelError,
+                                loading,
+                                user,
+                                onEventChosen = { chooseEvent(user, memberEvents + creatorEvents) },
+                                onProfileDialogShowRequested = { showingProfileDialog = true }
                             )
                         },
                         content = { paddingValues ->
@@ -303,99 +188,16 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
 
-                                AnimatedVisibility(viewModelError != null) {
-                                    Card(
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                        ),
-                                        modifier = Modifier.padding(8.dp)
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.error_events_load_title),
-                                            style = MaterialTheme.typography.headlineMedium,
-                                            color = MaterialTheme.colorScheme.onErrorContainer,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(8.dp),
-                                        )
-                                        Text(
-                                            stringResource(R.string.error_events_load_msg)
-                                                .format(viewModelError),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onErrorContainer,
-                                            modifier = Modifier.padding(8.dp),
-                                        )
-                                        OutlinedButton(
-                                            onClick = { viewModel.loadUserEvents() },
-                                            colors = ButtonDefaults.outlinedButtonColors(
-                                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                            ),
-                                            modifier = Modifier.padding(
-                                                start = 8.dp,
-                                                bottom = 8.dp
-                                            ),
-                                        ) {
-                                            Text(stringResource(R.string.action_retry))
-                                        }
-                                    }
-                                }
+                                EventLoadErrorCard(viewModelError) { viewModel.loadUserEvents() }
 
-                                AnimatedVisibility(
+                                NoEventSelectedCard(
                                     selectedEvent == null && !loading && viewModelError == null,
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize(),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth(.7f),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                        ) {
-                                            Text(
-                                                stringResource(R.string.event_view_no_selection),
-                                                modifier = Modifier
-                                                    .padding(bottom = 8.dp),
-                                            )
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth(),
-                                            ) {
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        chooseEvent(
-                                                            user,
-                                                            memberEvents + creatorEvents
-                                                        )
-                                                    },
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .padding(end = 4.dp)
-                                                ) {
-                                                    Text(
-                                                        stringResource(R.string.action_choose)
-                                                    )
-                                                }
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        chooseEvent(
-                                                            user,
-                                                            memberEvents + creatorEvents,
-                                                            startCreating = true,
-                                                        )
-                                                    },
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .padding(start = 4.dp)
-                                                ) {
-                                                    Text(
-                                                        stringResource(R.string.action_create)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
+                                ) { shouldCreate ->
+                                    chooseEvent(
+                                        user,
+                                        memberEvents + creatorEvents,
+                                        startCreating = shouldCreate,
+                                    )
                                 }
 
                                 AnimatedVisibility(selectedEvent != null && viewModelError == null) {
