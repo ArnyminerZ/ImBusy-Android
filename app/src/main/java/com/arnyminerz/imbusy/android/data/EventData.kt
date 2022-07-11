@@ -1,18 +1,17 @@
 package com.arnyminerz.imbusy.android.data
 
 import android.os.Parcelable
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
-import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import timber.log.Timber
+import java.util.Date
 
 @Parcelize
 class EventData(
     val id: String,
     val name: String,
-    private val _startDate: Timestamp,
-    private val _endDate: Timestamp,
+    val startDate: Date,
+    val endDate: Date,
     val creator: String,
     val members: List<String>,
 ) : Parcelable {
@@ -23,8 +22,8 @@ class EventData(
                 EventData(
                     snapshot.id,
                     snapshot.getString("name")!!,
-                    snapshot.getTimestamp("start_date")!!,
-                    snapshot.getTimestamp("end_date")!!,
+                    snapshot.getTimestamp("start_date")!!.toDate(),
+                    snapshot.getTimestamp("end_date")!!.toDate(),
                     snapshot.getString("creator")!!,
                     snapshot.get("members") as List<String>
                 )
@@ -33,10 +32,4 @@ class EventData(
                 null
             }
     }
-
-    @IgnoredOnParcel
-    val startDate = _startDate.toDate()
-
-    @IgnoredOnParcel
-    val endDate = _endDate.toDate()
 }
