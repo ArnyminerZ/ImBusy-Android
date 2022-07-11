@@ -14,6 +14,7 @@ import com.arnyminerz.imbusy.android.utils.dataStore
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -24,6 +25,7 @@ import timber.log.Timber
 class EventLoader(application: Application) : AndroidViewModel(application) {
     private val auth = Firebase.auth
     private val db = Firebase.firestore
+    private val functions = Firebase.functions
 
     val loading = mutableStateOf(true)
 
@@ -33,6 +35,9 @@ class EventLoader(application: Application) : AndroidViewModel(application) {
     val creatorEvents = mutableStateOf<List<EventData>>(emptyList())
 
     val error = mutableStateOf<String?>(null)
+
+    private var loadedPeopleDataEventId: String? = null
+    val peopleData = mutableStateOf<EventData.PeopleData?>(null)
 
     @Throws(AuthException::class)
     fun loadUserEvents() {
@@ -83,6 +88,25 @@ class EventLoader(application: Application) : AndroidViewModel(application) {
                 loading.value = false
             }
         }
+    }
+
+    fun loadUserDataFromSelectedEvent() {
+        val event = selectedEvent.value ?: return
+
+        // People data already loaded
+        if (loadedPeopleDataEventId == event.id)
+            return
+
+        viewModelScope.launch {
+            val usersPeopleData = event.getUsersData(functions)
+            loadedPeopleDataEventId = event.id
+            peopleData.value = usersPeopleData
+        }
+    }
+
+    fun consumePeopleData() {
+        loadedPeopleDataEventId = null
+        peopleData.value = null
     }
 
     /**
