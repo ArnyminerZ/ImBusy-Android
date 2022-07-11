@@ -6,12 +6,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -25,7 +25,7 @@ import java.util.Locale
  * 2 arrows for changing currently showed month
  */
 @Composable
-public fun DefaultMonthHeader(
+fun DefaultMonthHeader(
     monthState: MonthState,
     modifier: Modifier = Modifier,
 ) {
@@ -39,7 +39,7 @@ public fun DefaultMonthHeader(
         ) {
             Image(
                 imageVector = Icons.Default.KeyboardArrowLeft,
-                colorFilter = ColorFilter.tint(MaterialTheme.colors.onSurface),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
                 contentDescription = "Previous",
             )
         }
@@ -49,17 +49,20 @@ public fun DefaultMonthHeader(
                 .getDisplayName(FULL, Locale.getDefault())
                 .lowercase()
                 .replaceFirstChar { it.titlecase() },
-            style = MaterialTheme.typography.h4,
+            style = MaterialTheme.typography.headlineLarge,
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = monthState.currentMonth.year.toString(), style = MaterialTheme.typography.h4)
+        Text(
+            text = monthState.currentMonth.year.toString(),
+            style = MaterialTheme.typography.headlineLarge
+        )
         IconButton(
             modifier = Modifier.testTag("Increment"),
             onClick = { monthState.currentMonth = monthState.currentMonth.plusMonths(1) }
         ) {
             Image(
                 imageVector = Icons.Default.KeyboardArrowRight,
-                colorFilter = ColorFilter.tint(MaterialTheme.colors.onSurface),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
                 contentDescription = "Next",
             )
         }

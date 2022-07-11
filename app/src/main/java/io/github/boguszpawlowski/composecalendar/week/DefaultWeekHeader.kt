@@ -2,7 +2,7 @@ package io.github.boguszpawlowski.composecalendar.week
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -11,7 +11,7 @@ import java.time.format.TextStyle.SHORT
 import java.util.Locale
 
 @Composable
-public fun DefaultWeekHeader(
+fun DefaultWeekHeader(
     daysOfWeek: List<DayOfWeek>,
     modifier: Modifier = Modifier,
 ) {

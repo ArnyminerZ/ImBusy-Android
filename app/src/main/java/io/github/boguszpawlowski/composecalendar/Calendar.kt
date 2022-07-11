@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -38,9 +39,9 @@ import java.util.Locale
  * @property selectionState handler for the calendar's selection
  */
 @Stable
-public class CalendarState<T : SelectionState>(
-  public val monthState: MonthState,
-  public val selectionState: T,
+class CalendarState<T : SelectionState>(
+  val monthState: MonthState,
+  val selectionState: T,
 )
 
 /**
@@ -66,7 +67,8 @@ public class CalendarState<T : SelectionState>(
  * @param monthContainer container composable for all the days in current month
  */
 @Composable
-public fun SelectableCalendar(
+@ExperimentalMaterial3Api
+fun SelectableCalendar(
   modifier: Modifier = Modifier,
   firstDayOfWeek: DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek,
   today: LocalDate = LocalDate.now(),
@@ -117,7 +119,8 @@ public fun SelectableCalendar(
  * @param monthContainer container composable for all the days in current month
  */
 @Composable
-public fun StaticCalendar(
+@ExperimentalMaterial3Api
+fun StaticCalendar(
   modifier: Modifier = Modifier,
   firstDayOfWeek: DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek,
   today: LocalDate = LocalDate.now(),
@@ -163,7 +166,8 @@ public fun StaticCalendar(
  * @param monthContainer container composable for all the days in current month
  */
 @Composable
-public fun <T : SelectionState> Calendar(
+@ExperimentalMaterial3Api
+fun <T : SelectionState> Calendar(
   calendarState: CalendarState<T>,
   modifier: Modifier = Modifier,
   firstDayOfWeek: DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek,
