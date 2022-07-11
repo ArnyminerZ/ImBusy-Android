@@ -1,7 +1,9 @@
 package com.arnyminerz.imbusy.android.data
 
 import android.os.Parcelable
+import com.arnyminerz.imbusy.android.utils.appendAll
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.parcelize.Parcelize
 import timber.log.Timber
 import java.util.Date
@@ -32,4 +34,17 @@ class EventData(
                 null
             }
     }
+
+    suspend fun getUsersData(functions: FirebaseFunctions): PeopleData =
+        UserData.bulkGet(
+            functions,
+            mutableListOf(creator).appendAll(members),
+        ).let {
+            PeopleData(it[0], it.subList(1, it.size))
+        }
+
+    data class PeopleData(
+        val creator: UserData,
+        val membersData: List<UserData>,
+    )
 }
