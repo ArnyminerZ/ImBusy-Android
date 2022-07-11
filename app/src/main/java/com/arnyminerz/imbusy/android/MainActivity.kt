@@ -8,8 +8,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,12 +27,14 @@ import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material.icons.rounded.ListAlt
 import androidx.compose.material.rememberBottomSheetScaffoldState
+import androidx.compose.material.rememberBottomSheetState
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,10 +61,12 @@ import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Compa
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_CANCEL
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_INVALID
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_SELECTION
+import com.arnyminerz.imbusy.android.data.EventData
 import com.arnyminerz.imbusy.android.ui.components.calendar.DayView
 import com.arnyminerz.imbusy.android.ui.components.dialog.ProfileDialog
 import com.arnyminerz.imbusy.android.ui.theme.ImBusyTheme
 import com.arnyminerz.imbusy.android.ui.viewmodel.MainViewModel
+import com.arnyminerz.imbusy.android.utils.format
 import com.arnyminerz.imbusy.android.utils.restart
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -76,7 +82,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth
 
     private var firebaseUser: MutableState<FirebaseUser?> = mutableStateOf(null)
-    private var selectedEventId: MutableState<String?> = mutableStateOf(null)
 
     private val viewModel: MainViewModel by viewModels { MainViewModel.Factory() }
 
@@ -90,7 +95,7 @@ class MainActivity : ComponentActivity() {
         when (result.resultCode) {
             RESULT_CODE_SELECTION -> {
                 Timber.i("Selected event with id: $eventId")
-                selectedEventId.value = eventId
+                viewModel.select(eventId)
             }
             RESULT_CODE_CANCEL -> Timber.i("Selection cancelled")
             RESULT_CODE_INVALID -> Timber.e("Request invalid: $invalid")
@@ -112,6 +117,7 @@ class MainActivity : ComponentActivity() {
 
                 val creatorEvents by viewModel.creatorEvents
                 val memberEvents by viewModel.memberEvents
+                val selectedEvent by viewModel.selectedEvent
 
                 if (showingProfileDialog)
                     ProfileDialog(
@@ -126,19 +132,31 @@ class MainActivity : ComponentActivity() {
                 val calendarState = rememberSelectableCalendarState()
                 calendarState.selectionState.selectionMode = SelectionMode.Period
 
-                val bottomSheetScaffoldState = rememberBottomSheetScaffoldState()
+                val bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
+                val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
+                    bottomSheetState = bottomSheetState,
+                )
 
                 LaunchedEffect(Unit) {
-                    snapshotFlow { bottomSheetScaffoldState.bottomSheetState.currentValue }
+                    snapshotFlow { bottomSheetState.currentValue }
                         .collect {
                             if (it == BottomSheetValue.Collapsed)
                                 calendarState.selectionState.selection = emptyList()
+                            else {
+                                // If the bottom sheet is being shown, but there's no selected
+                                // event, close it, selection is not valid
+                                if (selectedEvent == null)
+                                    bottomSheetState.collapse()
+                            }
                         }
                 }
 
                 BottomSheetScaffold(
                     sheetBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
                     sheetContent = {
+                        if (selectedEvent == null)
+                            return@BottomSheetScaffold
+
                         Row {
                             @Composable
                             fun NavItem(
@@ -197,10 +215,19 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 scope.launch {
                                     calendarState.selectionState.selection = emptyList()
-                                    bottomSheetScaffoldState.bottomSheetState.collapse()
+                                    bottomSheetState.collapse()
                                 }
                             }
                         }
+
+                        Text(
+                            stringResource(R.string.event_field_date_start)
+                                .format(selectedEvent?.startDate?.format("yyyy-MM-dd"))
+                        )
+                        Text(
+                            stringResource(R.string.event_field_date_end)
+                                .format(selectedEvent?.endDate?.format("yyyy-MM-dd"))
+                        )
                     },
                     sheetGesturesEnabled = true,
                     sheetShape = RoundedCornerShape(8.dp),
@@ -216,18 +243,7 @@ class MainActivity : ComponentActivity() {
                                 navigationIcon = {
                                     IconButton(
                                         onClick = {
-                                            eventSelectionCallback.launch(
-                                                Intent(this, EventSelectorActivity::class.java)
-                                                    .putExtra(
-                                                        EventSelectorActivity.EXTRA_KEY_USER,
-                                                        user?.uid,
-                                                    )
-                                                    .putExtra(
-                                                        EventSelectorActivity.EXTRA_KEY_EVENTS,
-                                                        (creatorEvents + memberEvents)
-                                                            .toTypedArray()
-                                                    )
-                                            )
+                                            chooseEvent(user, memberEvents + creatorEvents)
                                         },
                                     ) {
                                         Icon(
@@ -250,7 +266,7 @@ class MainActivity : ComponentActivity() {
                         content = { paddingValues ->
                             Column(
                                 modifier = Modifier
-                                    .padding(paddingValues)
+                                    .padding(paddingValues),
                             ) {
                                 val loading by viewModel.loading
 
@@ -261,16 +277,76 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
 
-                                SelectableCalendar(
-                                    calendarState = calendarState,
-                                    dayContent = {
-                                        DayView(it) {
-                                            scope.launch {
-                                                bottomSheetScaffoldState.bottomSheetState.expand()
+                                AnimatedVisibility(
+                                    selectedEvent == null && !loading,
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize(),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth(.7f),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.event_view_no_selection),
+                                                modifier = Modifier
+                                                    .padding(bottom = 8.dp),
+                                            )
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                            ) {
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        chooseEvent(
+                                                            user,
+                                                            memberEvents + creatorEvents
+                                                        )
+                                                    },
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .padding(end = 4.dp)
+                                                ) {
+                                                    Text(
+                                                        stringResource(R.string.action_choose)
+                                                    )
+                                                }
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        chooseEvent(
+                                                            user,
+                                                            memberEvents + creatorEvents,
+                                                            startCreating = true,
+                                                        )
+                                                    },
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .padding(start = 4.dp)
+                                                ) {
+                                                    Text(
+                                                        stringResource(R.string.action_create)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
-                                )
+                                }
+
+                                AnimatedVisibility(selectedEvent != null) {
+                                    SelectableCalendar(
+                                        calendarState = calendarState,
+                                        dayContent = {
+                                            DayView(it) {
+                                                scope.launch {
+                                                    bottomSheetScaffoldState.bottomSheetState.expand()
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     )
@@ -287,5 +363,27 @@ class MainActivity : ComponentActivity() {
         firebaseUser.value = auth.currentUser
         if (auth.currentUser == null)
             startActivity(Intent(this, IntroActivity::class.java))
+    }
+
+    private fun chooseEvent(
+        user: FirebaseUser?,
+        events: List<EventData>,
+        startCreating: Boolean = false,
+    ) {
+        eventSelectionCallback.launch(
+            Intent(this, EventSelectorActivity::class.java)
+                .putExtra(
+                    EventSelectorActivity.EXTRA_KEY_USER,
+                    user?.uid,
+                )
+                .putExtra(
+                    EventSelectorActivity.EXTRA_KEY_EVENTS,
+                    events.toTypedArray()
+                )
+                .putExtra(
+                    EventSelectorActivity.EXTRA_KEY_CREATING,
+                    startCreating,
+                )
+        )
     }
 }
