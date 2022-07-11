@@ -28,6 +28,9 @@ import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material.icons.rounded.ListAlt
 import androidx.compose.material.rememberBottomSheetScaffoldState
 import androidx.compose.material.rememberBottomSheetState
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -51,22 +54,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.edit
 import coil.compose.AsyncImage
 import com.arnyminerz.imbusy.android.activity.IntroActivity
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity
+import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.EXTRA_KEY_CREATED
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.EXTRA_KEY_EVENT
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.EXTRA_KEY_INVALID
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_CANCEL
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_INVALID
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_SELECTION
 import com.arnyminerz.imbusy.android.data.EventData
+import com.arnyminerz.imbusy.android.pref.Keys
 import com.arnyminerz.imbusy.android.ui.components.calendar.DayView
 import com.arnyminerz.imbusy.android.ui.components.dialog.ProfileDialog
 import com.arnyminerz.imbusy.android.ui.theme.ImBusyTheme
-import com.arnyminerz.imbusy.android.ui.viewmodel.MainViewModel
+import com.arnyminerz.imbusy.android.ui.viewmodel.EventLoader
+import com.arnyminerz.imbusy.android.utils.dataStore
+import com.arnyminerz.imbusy.android.utils.doAsync
 import com.arnyminerz.imbusy.android.utils.format
+import com.arnyminerz.imbusy.android.utils.getLegacyParcelableExtra
 import com.arnyminerz.imbusy.android.utils.restart
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -83,7 +93,7 @@ class MainActivity : ComponentActivity() {
 
     private var firebaseUser: MutableState<FirebaseUser?> = mutableStateOf(null)
 
-    private val viewModel: MainViewModel by viewModels { MainViewModel.Factory() }
+    private val viewModel: EventLoader by viewModels { EventLoader.Factory(application) }
 
     private val eventSelectionCallback = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -91,9 +101,23 @@ class MainActivity : ComponentActivity() {
         val data = result.data
         val invalid = data?.getStringExtra(EXTRA_KEY_INVALID)
         val eventId = data?.getStringExtra(EXTRA_KEY_EVENT)
+        val createdEvent = data?.getLegacyParcelableExtra<EventData>(EXTRA_KEY_CREATED)
+
+        if (eventId != null)
+            doAsync {
+                Timber.i("Setting event id preference...")
+                dataStore.edit {
+                    it[Keys.SelectedEvent] = eventId
+                }
+            }
 
         when (result.resultCode) {
             RESULT_CODE_SELECTION -> {
+                if (createdEvent != null) {
+                    Timber.i("Created new event, storing in view model...")
+                    viewModel.notifyEventCreation(createdEvent)
+                }
+
                 Timber.i("Selected event with id: $eventId")
                 viewModel.select(eventId)
             }
@@ -115,6 +139,8 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 var showingProfileDialog by remember { mutableStateOf(false) }
 
+                val viewModelError by viewModel.error
+                val loading by viewModel.loading
                 val creatorEvents by viewModel.creatorEvents
                 val memberEvents by viewModel.memberEvents
                 val selectedEvent by viewModel.selectedEvent
@@ -241,15 +267,17 @@ class MainActivity : ComponentActivity() {
                                     Text(text = stringResource(R.string.app_name))
                                 },
                                 navigationIcon = {
-                                    IconButton(
-                                        onClick = {
-                                            chooseEvent(user, memberEvents + creatorEvents)
-                                        },
-                                    ) {
-                                        Icon(
-                                            Icons.Rounded.ListAlt,
-                                            stringResource(R.string.image_desc_events_list),
-                                        )
+                                    AnimatedVisibility(viewModelError == null && !loading) {
+                                        IconButton(
+                                            onClick = {
+                                                chooseEvent(user, memberEvents + creatorEvents)
+                                            },
+                                        ) {
+                                            Icon(
+                                                Icons.Rounded.ListAlt,
+                                                stringResource(R.string.image_desc_events_list),
+                                            )
+                                        }
                                     }
                                 },
                                 actions = {
@@ -268,8 +296,6 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier
                                     .padding(paddingValues),
                             ) {
-                                val loading by viewModel.loading
-
                                 AnimatedVisibility(loading) {
                                     LinearProgressIndicator(
                                         modifier = Modifier
@@ -277,8 +303,45 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
 
+                                AnimatedVisibility(viewModelError != null) {
+                                    Card(
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                        ),
+                                        modifier = Modifier.padding(8.dp)
+                                    ) {
+                                        Text(
+                                            stringResource(R.string.error_events_load_title),
+                                            style = MaterialTheme.typography.headlineMedium,
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(8.dp),
+                                        )
+                                        Text(
+                                            stringResource(R.string.error_events_load_msg)
+                                                .format(viewModelError),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            modifier = Modifier.padding(8.dp),
+                                        )
+                                        OutlinedButton(
+                                            onClick = { viewModel.loadUserEvents() },
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                            ),
+                                            modifier = Modifier.padding(
+                                                start = 8.dp,
+                                                bottom = 8.dp
+                                            ),
+                                        ) {
+                                            Text(stringResource(R.string.action_retry))
+                                        }
+                                    }
+                                }
+
                                 AnimatedVisibility(
-                                    selectedEvent == null && !loading,
+                                    selectedEvent == null && !loading && viewModelError == null,
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -335,7 +398,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                AnimatedVisibility(selectedEvent != null) {
+                                AnimatedVisibility(selectedEvent != null && viewModelError == null) {
                                     SelectableCalendar(
                                         calendarState = calendarState,
                                         dayContent = {
