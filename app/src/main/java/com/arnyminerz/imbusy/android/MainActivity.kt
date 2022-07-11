@@ -8,18 +8,33 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomSheetScaffold
+import androidx.compose.material.BottomSheetScaffoldState
 import androidx.compose.material.BottomSheetValue
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Article
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.People
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.rememberBottomSheetScaffoldState
 import androidx.compose.material.rememberBottomSheetState
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -29,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import com.arnyminerz.imbusy.android.activity.IntroActivity
@@ -40,6 +56,7 @@ import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Compa
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_INVALID
 import com.arnyminerz.imbusy.android.activity.dialog.EventSelectorActivity.Companion.RESULT_CODE_SELECTION
 import com.arnyminerz.imbusy.android.data.EventData
+import com.arnyminerz.imbusy.android.data.UserData
 import com.arnyminerz.imbusy.android.pref.Keys
 import com.arnyminerz.imbusy.android.ui.components.DatesSelectionBottomSheet
 import com.arnyminerz.imbusy.android.ui.components.bar.MainTopBar
@@ -53,13 +70,22 @@ import com.arnyminerz.imbusy.android.utils.dataStore
 import com.arnyminerz.imbusy.android.utils.doAsync
 import com.arnyminerz.imbusy.android.utils.getLegacyParcelableExtra
 import com.arnyminerz.imbusy.android.utils.restart
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.PagerState
+import com.google.accompanist.pager.rememberPagerState
+import com.google.accompanist.placeholder.placeholder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
+import io.github.boguszpawlowski.composecalendar.CalendarState
 import io.github.boguszpawlowski.composecalendar.SelectableCalendar
 import io.github.boguszpawlowski.composecalendar.rememberSelectableCalendarState
+import io.github.boguszpawlowski.composecalendar.selection.DynamicSelectionState
 import io.github.boguszpawlowski.composecalendar.selection.SelectionMode
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -101,7 +127,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+    @OptIn(
+        ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class,
+        ExperimentalPagerApi::class
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -111,8 +140,8 @@ class MainActivity : ComponentActivity() {
             ImBusyTheme {
                 val user by firebaseUser
 
-                val scope = rememberCoroutineScope()
                 var showingProfileDialog by remember { mutableStateOf(false) }
+                var tabIndex by remember { mutableStateOf(0) }
 
                 val viewModelError by viewModel.error
                 val loading by viewModel.loading
@@ -133,10 +162,12 @@ class MainActivity : ComponentActivity() {
                 val calendarState = rememberSelectableCalendarState()
                 calendarState.selectionState.selectionMode = SelectionMode.Period
 
+                val scope = rememberCoroutineScope()
                 val bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
                 val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
                     bottomSheetState = bottomSheetState,
                 )
+                val pagerState = rememberPagerState()
 
                 LaunchedEffect(Unit) {
                     snapshotFlow { bottomSheetState.currentValue }
@@ -150,6 +181,11 @@ class MainActivity : ComponentActivity() {
                                     bottomSheetState.collapse()
                             }
                         }
+                }
+                LaunchedEffect(Unit) {
+                    snapshotFlow { pagerState.currentPage }
+                        .distinctUntilChanged()
+                        .collect { page -> tabIndex = page }
                 }
 
                 BottomSheetScaffold(
@@ -176,6 +212,29 @@ class MainActivity : ComponentActivity() {
                                 onProfileDialogShowRequested = { showingProfileDialog = true }
                             )
                         },
+                        bottomBar = {
+                            if (viewModelError == null && selectedEvent != null) {
+                                BottomAppBar {
+                                    listOf(
+                                        R.string.event_toolbar_calendar to Icons.Rounded.Event,
+                                        R.string.event_toolbar_summary to Icons.Rounded.Article,
+                                        R.string.event_toolbar_members to Icons.Rounded.People,
+                                        R.string.event_toolbar_properties to Icons.Rounded.Tune,
+                                    ).forEachIndexed { index, (labelRes, icon) ->
+                                        val label = stringResource(labelRes)
+                                        NavigationBarItem(
+                                            selected = tabIndex == index,
+                                            onClick = {
+                                                tabIndex = index
+                                                scope.launch { pagerState.animateScrollToPage(index) }
+                                            },
+                                            label = { Text(label) },
+                                            icon = { Icon(icon, label) },
+                                        )
+                                    }
+                                }
+                            }
+                        },
                         content = { paddingValues ->
                             Column(
                                 modifier = Modifier
@@ -200,16 +259,19 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
 
-                                AnimatedVisibility(selectedEvent != null && viewModelError == null) {
-                                    SelectableCalendar(
-                                        calendarState = calendarState,
-                                        dayContent = {
-                                            DayView(it) {
-                                                scope.launch {
-                                                    bottomSheetScaffoldState.bottomSheetState.expand()
-                                                }
-                                            }
+                                doAsync {
+                                    UserData.bulkGet(Firebase.functions, listOf(user!!.uid))
+                                        .forEach {
+                                            Timber.i("User: $it")
                                         }
+                                }
+
+                                AnimatedVisibility(selectedEvent != null && viewModelError == null) {
+                                    MainPager(
+                                        pagerState,
+                                        calendarState,
+                                        bottomSheetScaffoldState,
+                                        listOf(calendarView, placeholder, membersList, placeholder),
                                     )
                                 }
                             }
@@ -250,5 +312,108 @@ class MainActivity : ComponentActivity() {
                     startCreating,
                 )
         )
+    }
+
+    @Composable
+    @ExperimentalPagerApi
+    @ExperimentalMaterialApi
+    @ExperimentalMaterial3Api
+    fun MainPager(
+        pagerState: PagerState,
+        calendarState: CalendarState<DynamicSelectionState>,
+        bottomSheetScaffoldState: BottomSheetScaffoldState,
+        pages: List<@Composable (
+            calendarState: CalendarState<DynamicSelectionState>,
+            bottomSheetScaffoldState: BottomSheetScaffoldState,
+        ) -> Unit>,
+    ) {
+        HorizontalPager(count = pages.size, state = pagerState) { page ->
+            pages[page].invoke(calendarState, bottomSheetScaffoldState)
+        }
+    }
+
+    @ExperimentalMaterialApi
+    @ExperimentalMaterial3Api
+    private val calendarView = @Composable { calendarState: CalendarState<DynamicSelectionState>,
+                                             bottomSheetScaffoldState: BottomSheetScaffoldState ->
+        val scope = rememberCoroutineScope()
+
+        SelectableCalendar(
+            calendarState = calendarState,
+            modifier = Modifier
+                .padding(horizontal = 8.dp),
+            dayContent = {
+                DayView(it) {
+                    scope.launch {
+                        bottomSheetScaffoldState.bottomSheetState.expand()
+                    }
+                }
+            }
+        )
+    }
+
+    @ExperimentalMaterialApi
+    @ExperimentalMaterial3Api
+    private val membersList = @Composable { _: CalendarState<DynamicSelectionState>,
+                                            _: BottomSheetScaffoldState ->
+        val peopleData by viewModel.peopleData
+
+        LazyColumn {
+            // Creator card
+            item {
+                Card(
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                    ) {
+                        Text(
+                            peopleData?.creator?.displayName ?: "Loading...",
+                            modifier = Modifier
+                                .weight(1f)
+                                .placeholder(
+                                    visible = peopleData?.creator == null,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                ),
+                        )
+                        Badge {
+                            Text("Creator")
+                        }
+                    }
+                }
+            }
+
+            items(viewModel.selectedEvent.value!!.members.size) { index ->
+                Card(
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                    ) {
+                        Text(
+                            peopleData?.membersData?.getOrNull(index)?.displayName ?: "Loading...",
+                            modifier = Modifier
+                                .weight(1f)
+                                .placeholder(
+                                    visible = peopleData?.membersData == null,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                ),
+                        )
+                    }
+                }
+            }
+        }
+
+        viewModel.loadUserDataFromSelectedEvent()
+    }
+
+    @ExperimentalMaterialApi
+    private val placeholder = @Composable { _: CalendarState<DynamicSelectionState>,
+                                            _: BottomSheetScaffoldState ->
+        Text("This is a placeholder")
     }
 }
