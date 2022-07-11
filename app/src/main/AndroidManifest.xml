@@ -33,7 +33,8 @@
 
         <activity
             android:name=".activity.dialog.EventSelectorActivity"
-            android:exported="true" />
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize" />
 
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
