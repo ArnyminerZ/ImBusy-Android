@@ -13,6 +13,16 @@ fun <T, L : MutableList<T>> L.append(obj: T): L = apply {
 }
 
 /**
+ * Adds all the objects to the list, and returns itself after doing so.
+ * @author Arnau Mora
+ * @since 20220711
+ * @param objects The objects to add.
+ */
+fun <T, L : MutableList<T>> L.appendAll(objects: Collection<T>): L = apply {
+    addAll(objects)
+}
+
+/**
  * Adds the object to the state's list, and updates its value.
  * @author Arnau Mora
  * @since 20220711
