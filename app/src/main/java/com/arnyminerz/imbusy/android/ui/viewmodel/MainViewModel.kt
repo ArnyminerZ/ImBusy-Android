@@ -18,7 +18,9 @@ class MainViewModel : ViewModel() {
     private val auth = Firebase.auth
     private val db = Firebase.firestore
 
-    val loading = mutableStateOf(false)
+    val loading = mutableStateOf(true)
+
+    val selectedEvent = mutableStateOf<EventData?>(null)
 
     val memberEvents = mutableStateOf<List<EventData>>(emptyList())
     val creatorEvents = mutableStateOf<List<EventData>>(emptyList())
@@ -56,6 +58,20 @@ class MainViewModel : ViewModel() {
                 loading.value = false
             }
         }
+    }
+
+    /**
+     * Selects an specific event from its id.
+     * @author Arnau Mora
+     * @since 20220711
+     * @param eventId The ID of the event to select.
+     */
+    @Throws(IllegalArgumentException::class)
+    fun select(eventId: String?) {
+        val event = (creatorEvents.value + memberEvents.value)
+            .find { it.id == eventId }
+            ?: throw IllegalArgumentException("Could not find an event with id $eventId.")
+        selectedEvent.value = event
     }
 
     class Factory : ViewModelProvider.Factory {
