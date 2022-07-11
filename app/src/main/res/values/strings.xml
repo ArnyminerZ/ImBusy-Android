@@ -10,6 +10,8 @@
     <string name="action_mark_busy">Mark as Busy</string>
     <string name="action_mark_available">Mark as Available</string>
     <string name="action_cancel_selection">Cancel Selection</string>
+    <string name="action_choose">Choose</string>
+    <string name="action_create">Create</string>
 
     <string name="auth_google">Sign In with Google</string>
 
@@ -17,6 +19,7 @@
     <string name="fab_desc_intro_end">Close the Intro Page</string>
     <string name="fab_desc_intro_complete_step">Complete the step above to continue</string>
     <string name="fab_desc_profile_image">Profile Image</string>
+    <string name="fab_desc_create_event">Create Event</string>
 
     <string name="image_desc_edit_event">Edit Event</string>
     <string name="image_desc_close_dialog">Close Dialog</string>
@@ -24,6 +27,11 @@
     <string name="image_desc_mark_busy">Mark as busy</string>
     <string name="image_desc_mark_available">Mark as available</string>
     <string name="image_desc_cancel_selection">Cancel Selection</string>
+    <string name="image_desc_cancel_creation">Cancel Creation</string>
+    <string name="image_desc_create_event">Create new event</string>
+    <string name="image_desc_event_creator_name">Event Name</string>
+    <string name="image_desc_event_start">Event Start Date</string>
+    <string name="image_desc_event_end">Event End Date</string>
 
     <string name="dropdown_choose">Choose an option</string>
 
@@ -44,7 +52,14 @@
     <string name="dialog_sign_out_message">You are about to sign out from the app. This will erase all your locally stored personal data. Cloud data and your account won\'t be removed. Do you want to continue?</string>
 
     <string name="events_list_title">Events</string>
+    <string name="events_creator_title">Create Event</string>
     <string name="events_list_empty">There are no events to display</string>
+
+    <string name="event_view_no_selection">You have not selected any event</string>
+
+    <string name="event_creator_label_name">Event Name</string>
+    <string name="event_creator_label_start">Start Date</string>
+    <string name="event_creator_label_end">End Date</string>
 
     <string name="events_filter_creator">Is Creator</string>
     <string name="events_filter_members">Is Member</string>
@@ -55,4 +70,6 @@
 
     <string name="event_type_creator">Creator</string>
     <string name="event_type_member">Member</string>
+
+    <string name="snackbar_error_event_create_empty">Please, fill all the fields</string>
 </resources>
