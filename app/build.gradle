@@ -72,7 +72,9 @@ dependencies {
     implementation 'androidx.activity:activity-compose:1.5.0'
 
     // Jetpack Compose - Accompanist utilities
-    implementation "com.google.accompanist:accompanist-pager:0.24.13-rc"
+    def accompanist_version = '0.24.13-rc'
+    implementation "com.google.accompanist:accompanist-pager:$accompanist_version"
+    implementation "com.google.accompanist:accompanist-placeholder-material:$accompanist_version"
 
     // Jetpack Compose - Font Awesome Icons
     implementation 'com.github.Gurupreet:FontAwesomeCompose:1.0.0'
